@@ -1,0 +1,14 @@
+# Use following argument for required channels: -c pytorch
+cudatoolkit
+jupyter
+matplotlib
+numpy
+openpyxl
+pandas
+pillow
+python
+pytorch
+scikit-learn
+seaborn
+torchvision
+tqdm

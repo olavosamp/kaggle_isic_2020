@@ -4,6 +4,7 @@ import torch
 import torch.utils.data
 import csv
 import os
+import lib.defines as defs
 
 class Dataset(torch.utils.data.Dataset):
     def __init__(self, image_path, metadata, target, transform, balance):
@@ -54,8 +55,7 @@ def create_dataset(data_path, csv_path, mean_age=48.9, std_age=14.4,
     image_path = []
     metadata = []
     target = []
-    anatom_category = ("torso", "lower extremity", "upper extremity",
-            "head/neck", "palms/soles", "oral/genital")
+    anatom_category = defs.metadata_anatom_categories
     with open(csv_path, newline="") as csv_file:
         reader = csv.DictReader(csv_file)
         # Read path and metadata from the CSV file.

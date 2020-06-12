@@ -38,9 +38,12 @@ if __name__ == "__main__":
             (0.229, 0.224, 0.225))
         ])}
     # Create train and validation datasets.
-    dataset = {x: lib.dataset.create_dataset(data_path,
-        "csv/{}_set.csv".format(x), transform=transform[x], balance=True)
-        for x in ("train", "val")}
+    dataset = {}
+    dataset["train"] = lib.dataset.create_dataset(data_path, "csv/{}_set.csv".format("train"),
+                transform=transform["train"], balance=True)
+    
+    dataset["val"] = lib.dataset.create_dataset(data_path, "csv/{}_set.csv".format("val"),
+                transform=transform["val"], balance=False)
     print("Train set size: {}.".format(len(dataset["train"])))
     print("Validation set size: {}.".format(len(dataset["val"])))
 

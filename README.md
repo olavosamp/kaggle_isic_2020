@@ -1,5 +1,5 @@
-# kaggle_isic_2020
-Files for Kaggle SIIM-ISIC 2020 Melanoma competition
+# Kaggle SIIM-ISIC Melanoma 2020 Competition
+Files for <a href="https://www.kaggle.com/c/siim-isic-melanoma-classification">Kaggle SIIM-ISIC 2020 Melanoma</a> competition.
 
 ## Contribution tips
 Commit message guidelines: <a href="https://git-scm.com/book/en/v2/Distributed-Git-Contributing-to-a-Project">Git docs</a>, <a href="https://github.com/erlang/otp/wiki/Writing-good-commit-messages">Erlang/OTP guide</a>, <a href="https://www.conventionalcommits.org/">Alternative guide</a>.

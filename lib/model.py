@@ -7,6 +7,7 @@ import time
 import uuid
 import lib.dataset
 import lib.dirs as dirs
+from tqdm import tqdm
 
 
 device = torch.device("cuda:3" if torch.cuda.is_available() else "cpu")
@@ -67,7 +68,7 @@ def train_model(model, dataset, batch_size, optimizer, scheduler, epoch_number,
             epoch_confidence = []
             epoch_time = time.time()
             # Iterate over the dataset.
-            for image, metadata, target  in data_loader[phase]:
+            for image, metadata, target  in tqdm(data_loader[phase]):
                 # Update epoch target list to compute AUC(ROC) later.
                 epoch_target.append(target.numpy())
 
@@ -111,7 +112,8 @@ def train_model(model, dataset, batch_size, optimizer, scheduler, epoch_number,
             epoch_auc[phase][i] = sklearn.metrics.roc_auc_score(epoch_correct,
                     epoch_confidence)
             epoch_time = time.time() - epoch_time
-            print("Epoch complete in {:.0f}h {:.0f}m {:.0f}s".format(epoch_time // 3600, epoch_time // 60 % 60, epoch_time % 60))
+            print("Epoch complete in {:.0f}h {:.0f}m {:.0f}s".format(epoch_time // 3600, \
+                epoch_time // 60 % 60, epoch_time % 60))
             print("{} loss: {:.4f}".format(phase, epoch_loss[phase][i]))
             print("{} accuracy: {:.4f}".format(phase, epoch_accuracy[phase][i]))
             print("{} area under ROC curve: {:.4f}".format(phase, epoch_auc[phase][i]))

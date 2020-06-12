@@ -1,5 +1,5 @@
 import numpy as np
-import skimage
+import skimage.io
 import torch
 import torch.utils.data
 import csv

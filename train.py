@@ -44,6 +44,7 @@ if __name__ == "__main__":
     
     dataset["val"] = lib.dataset.create_dataset(data_path, "csv/{}_set.csv".format("val"),
                 transform=transform["val"], balance=False)
+
     print("Train set size: {}.".format(len(dataset["train"])))
     print("Validation set size: {}.".format(len(dataset["val"])))
 

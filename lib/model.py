@@ -34,9 +34,11 @@ class MetadataModel(torch.nn.Module):
         return output
 
 def train_model(model, dataset, batch_size, optimizer, scheduler, epoch_number,
-        use_metadata, loss_balance):
+        use_metadata, loss_balance, weights_path=None):
     # Create unique identifier for this experiment.
     identifier = uuid.uuid4()
+
+    print("Using device: ", device)
     # Instantiate loss and softmax.
     if loss_balance:
         weight = [1.0, dataset["train"].imbalance_ratio()]
@@ -119,7 +121,10 @@ def train_model(model, dataset, batch_size, optimizer, scheduler, epoch_number,
             print("{} area under ROC curve: {:.4f}".format(phase, epoch_auc[phase][i]))
 
         # Save model.
-        torch.save(model.state_dict, Path(dirs.weights) / "resnet18_{}_{}.pth".format(i, identifier))
+        # weightsSavePath = Path(dirs.weights) / "resnet18_{}_{}.pth".format(i, identifier)
+        if weights_path is not None:
+            dirs.create_folder(weightsSavePath.parent)
+            torch.save(model.state_dict, weightsSavePath)
 
 if __name__ == "__main__":
     pass

@@ -1,5 +1,5 @@
 # Use following argument for required channels: -c pytorch
-cudatoolkit
+cudatoolkit=10.0
 jupyter
 matplotlib
 numpy

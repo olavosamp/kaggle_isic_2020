@@ -111,16 +111,18 @@ def train_model(model, dataset, batch_size, optimizer, scheduler, epoch_number,
             epoch_correct = epoch_target == (epoch_confidence > 0.5)
             epoch_accuracy[phase][i] = (epoch_correct.sum() /
                     len(dataset[phase])) #sample_number
-            epoch_auc[phase][i] = sklearn.metrics.roc_auc_score(epoch_correct,
+            epoch_auc[phase][i] = sklearn.metrics.roc_auc_score(epoch_target,
                     epoch_confidence)
             epoch_time = time.time() - epoch_time
+
+            # Report epoch results
             print("Epoch complete in {:.0f}h {:.0f}m {:.0f}s".format(epoch_time // 3600, \
                 epoch_time // 60 % 60, epoch_time % 60))
             print("{} loss: {:.4f}".format(phase, epoch_loss[phase][i]))
             print("{} accuracy: {:.4f}".format(phase, epoch_accuracy[phase][i]))
             print("{} area under ROC curve: {:.4f}".format(phase, epoch_auc[phase][i]))
 
-        # Save model.
+        # Save model
         # weightsSavePath = Path(dirs.weights) / "resnet18_{}_{}.pth".format(i, identifier)
         if weights_path is not None:
             dirs.create_folder(weightsSavePath.parent)

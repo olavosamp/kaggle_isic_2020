@@ -63,16 +63,19 @@ def create_dataset(data_path, csv_path, mean_age=48.9, std_age=14.4,
             image_filename = row["image_name"] + ".jpg"
             image_path.append(os.path.join(data_path, image_filename))
             metadata.append([0.0] * (3 + len(anatom_category)))
+
             # One-hot encode sex. Encoded as zeros if it is missing.
             if row["sex"] == "female":
                 metadata[-1][0] = 1.0
             elif row["sex"] == "male":
                 metadata[-1][1] = 1.0
+
             # If age is missing, assume it is the mean.
             if row["age_approx"] == "":
                 metadata[-1][2] = mean_age
             else:
                 metadata[-1][2] = float(row["age_approx"])
+
             # One-hot encode anatom site. Encodead as zeros if it is missing.
             for i, category in enumerate(anatom_category):
                 if row["anatom_site_general_challenge"] == category:

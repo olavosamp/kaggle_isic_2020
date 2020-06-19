@@ -1,13 +1,15 @@
 import torch
 import torchvision
-import numpy as np
+import numpy  as np
+import pandas as pd
 from pathlib import Path
 import sklearn.metrics
 import time
 import uuid
+from tqdm import tqdm
+
 import lib.dataset
 import lib.dirs as dirs
-from tqdm import tqdm
 
 
 device = torch.device("cuda:3" if torch.cuda.is_available() else "cpu")
@@ -54,12 +56,14 @@ def train_model(model, dataset, batch_size, optimizer, scheduler, epoch_number,
         for x in ("train", "val")}
 
     # Statistics that will be computed later.
-    epoch_loss = {x: np.zeros(epoch_number) for x in ("train", "val")}
+    epoch_auc      = {x: np.zeros(epoch_number) for x in ("train", "val")}
+    epoch_loss     = {x: np.zeros(epoch_number) for x in ("train", "val")}
     epoch_accuracy = {x: np.zeros(epoch_number) for x in ("train", "val")}
-    epoch_auc = {x: np.zeros(epoch_number) for x in ("train", "val")}
     for i in range(epoch_number):
-        print("Epoch: {}/{}".format(i + 1, epoch_number))
+        print("\nEpoch: {}/{}".format(i + 1, epoch_number))
         for phase in ("train", "val"):
+            print("\n{} phase: ".format(str(phase).capitalize()))
+            
             # Set model to training or evalution mode according to the phase.
             if phase == "train":
                 model.train()
@@ -68,7 +72,7 @@ def train_model(model, dataset, batch_size, optimizer, scheduler, epoch_number,
 
             epoch_target = []
             epoch_confidence = []
-            epoch_time = time.time()
+            epoch_seconds = time.time()
             # Iterate over the dataset.
             for image, metadata, target  in tqdm(data_loader[phase]):
                 # Update epoch target list to compute AUC(ROC) later.
@@ -111,19 +115,35 @@ def train_model(model, dataset, batch_size, optimizer, scheduler, epoch_number,
             epoch_correct = epoch_target == (epoch_confidence > 0.5)
             epoch_accuracy[phase][i] = (epoch_correct.sum() /
                     len(dataset[phase])) #sample_number
-            epoch_auc[phase][i] = sklearn.metrics.roc_auc_score(epoch_correct,
+            epoch_auc[phase][i] = sklearn.metrics.roc_auc_score(epoch_target,
                     epoch_confidence)
-            epoch_time = time.time() - epoch_time
-            print("Epoch complete in {:.0f}h {:.0f}m {:.0f}s".format(epoch_time // 3600, \
-                epoch_time // 60 % 60, epoch_time % 60))
+            epoch_seconds = time.time() - epoch_seconds
+
+            time_string = "{:.0f}h {:.0f}m {:.0f}s".format(epoch_seconds // 3600, \
+                epoch_seconds // 60 % 60, epoch_seconds % 60)
+            print("Epoch complete in ", time_string)
             print("{} loss: {:.4f}".format(phase, epoch_loss[phase][i]))
             print("{} accuracy: {:.4f}".format(phase, epoch_accuracy[phase][i]))
             print("{} area under ROC curve: {:.4f}".format(phase, epoch_auc[phase][i]))
 
+            results_df = pd.DataFrame({
+                                        "target":        epoch_target[i],
+                                        "confidence":    epoch_confidence[i],
+                                        "loss-train":    epoch_loss['train'][i],
+                                        "loss-val":      epoch_loss['val'][i],
+                                        "correct":       epoch_correct,
+                                        "accuracy-train":epoch_accuracy['train'][i],
+                                        "accuracy-val":  epoch_accuracy['val'][i],
+                                        "auc-train":     epoch_auc['train'][i],
+                                        "auc-val":       epoch_auc['val'][i],
+                                        "seconds":       epoch_seconds
+            })
         # Save model
-        weights_path = Path(dirs.weights) / "resnet18_{}_{}.pth".format(i, identifier)
+        experiment_path = Path(dirs.experiments) / str(identifier)
+        weights_path = (experiment_path / "weights") / "resnet18_{}_{}.pth".format(i, identifier)
         dirs.create_folder(weights_path.parent)
         torch.save(model.state_dict, weights_path)
+        results_df.to_json("epoch_{}_results.json".format(i))
 
 if __name__ == "__main__":
     pass

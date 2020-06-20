@@ -1,3 +1,9 @@
+# Unix temporary files
+*~
+
+# Data
+data/
+
 # VSCode config files
 .vscode
 
@@ -130,6 +136,3 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-
-# Data
-data/

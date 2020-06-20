@@ -39,6 +39,7 @@ def train_model(model, dataset, batch_size, optimizer, scheduler, epoch_number,
         use_metadata, loss_balance):
     # Create unique identifier for this experiment.
     identifier = uuid.uuid4()
+    phases = ("train", "val")
 
     print("Using device: ", device)
     # Instantiate loss and softmax.
@@ -53,15 +54,16 @@ def train_model(model, dataset, batch_size, optimizer, scheduler, epoch_number,
     # Define data loaders.
     data_loader = {x: torch.utils.data.DataLoader(dataset[x],
         batch_size=batch_size, shuffle=True, num_workers=4)
-        for x in ("train", "val")}
+        for x in phases}
 
     # Statistics that will be computed later.
-    epoch_auc      = {x: np.zeros(epoch_number) for x in ("train", "val")}
-    epoch_loss     = {x: np.zeros(epoch_number) for x in ("train", "val")}
-    epoch_accuracy = {x: np.zeros(epoch_number) for x in ("train", "val")}
+    epoch_auc      = {x: np.zeros(epoch_number) for x in phases}
+    epoch_loss     = {x: np.zeros(epoch_number) for x in phases}
+    epoch_accuracy = {x: np.zeros(epoch_number) for x in phases}
+    results_phase     = {x: dict()                 for x in phases}
     for i in range(epoch_number):
         print("\nEpoch: {}/{}".format(i + 1, epoch_number))
-        for phase in ("train", "val"):
+        for phase in phases:
             print("\n{} phase: ".format(str(phase).capitalize()))
             
             # Set model to training or evalution mode according to the phase.
@@ -126,22 +128,24 @@ def train_model(model, dataset, batch_size, optimizer, scheduler, epoch_number,
             print("{} accuracy: {:.4f}".format(phase, epoch_accuracy[phase][i]))
             print("{} area under ROC curve: {:.4f}".format(phase, epoch_auc[phase][i]))
 
-            results_df = pd.DataFrame({
-                                        "target":        epoch_target[i],
-                                        "confidence":    epoch_confidence[i],
-                                        "loss-train":    epoch_loss['train'][i],
-                                        "loss-val":      epoch_loss['val'][i],
-                                        "correct":       epoch_correct,
-                                        "accuracy-train":epoch_accuracy['train'][i],
-                                        "accuracy-val":  epoch_accuracy['val'][i],
-                                        "auc-train":     epoch_auc['train'][i],
-                                        "auc-val":       epoch_auc['val'][i],
-                                        "seconds":       epoch_seconds
-            })
+            results_phase[phase] = {"epoch":      i,
+                                    "phase":      phase,
+                                    "target":     epoch_target[i],
+                                    "confidence": epoch_confidence[i],
+                                    "loss":       epoch_loss[phase][i],
+                                    "correct":    epoch_correct,
+                                    "accuracy":   epoch_accuracy[phase][i],
+                                    "auc":        epoch_auc[phase][i],
+                                    "seconds":    epoch_seconds
+            }
+        results_df = pd.concat([results_phase[phases[0]],
+                               results_phase[phases[1]]], axis=1)
+
         # Save model
         experiment_path = Path(dirs.experiments) / str(identifier)
         weights_path = (experiment_path / "weights") / "resnet18_{}_{}.pth".format(i, identifier)
         dirs.create_folder(weights_path.parent)
+        
         torch.save(model.state_dict, weights_path)
         results_df.to_json("epoch_{}_results.json".format(i))
 

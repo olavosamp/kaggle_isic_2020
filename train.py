@@ -15,7 +15,7 @@ if __name__ == "__main__":
     learning_rate = 0.001
     weight_decay = 0.0001
     momentum = 0.9
-    epoch_number = 50
+    epoch_number = 5
     step_size = 20
     gamma = 0.1
 

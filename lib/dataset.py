@@ -51,7 +51,7 @@ class Dataset(torch.utils.data.Dataset):
         return image, metadata, target
 
 def create_dataset(data_path, csv_path, mean_age=48.9, std_age=14.4,
-        transform=None, balance=False):
+        transform=None, balance=False, sample=1.0):
     image_path = []
     metadata = []
     target = []
@@ -83,6 +83,14 @@ def create_dataset(data_path, csv_path, mean_age=48.9, std_age=14.4,
     metadata[:, 2] -= mean_age
     metadata[:, 2] /= std_age
     target = np.array(target)
+    
+    if sample < 1.0:
+        # Sample only a fraction of the dataset (non-randomized)
+        sample_index = round(sample*len(image_path))
+        image_path  = image_path[:sample_index]
+        metadata    = metadata[:sample_index, :]
+        target      = target[:sample_index]
+
     # Create dataset.
     dataset = Dataset(image_path, metadata, target, transform, balance)
     return dataset

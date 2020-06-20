@@ -139,15 +139,15 @@ def train_model(model, dataset, batch_size, optimizer, scheduler, epoch_number,
                                     "seconds":    epoch_seconds
             }
         results_df = pd.concat([results_phase[phases[0]],
-                               results_phase[phases[1]]], axis=1)
+                                results_phase[phases[1]]], axis=1)
 
         # Save model
         experiment_path = Path(dirs.experiments) / str(identifier)
         weights_path = (experiment_path / "weights") / "resnet18_{}_{}.pth".format(i, identifier)
         dirs.create_folder(weights_path.parent)
-        
+
         torch.save(model.state_dict, weights_path)
-        results_df.to_json("epoch_{}_results.json".format(i))
+        results_df.to_json(experiment_path / "epoch_{}_results.json".format(i))
 
 if __name__ == "__main__":
     pass

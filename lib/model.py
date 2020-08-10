@@ -36,9 +36,13 @@ class MetadataModel(torch.nn.Module):
         return output
 
 def train_model(model, dataset, batch_size, optimizer, scheduler, epoch_number,
-        use_metadata, loss_balance):
+        use_metadata, loss_balance=True, identifier=None):
     # Create unique identifier for this experiment.
-    identifier = uuid.uuid4()
+    if identifier is None:
+        identifier = uuid.uuid4()
+    else:
+        identifier = str(identifier)
+
     phases = ("train", "val")
 
     print("Using device: ", device)

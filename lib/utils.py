@@ -1,9 +1,34 @@
 import os
 import json
-import pandas as pd
-from pathlib  import Path
-from glob     import glob
+import pandas       as pd
+from pathlib        import Path
+from glob           import glob
+from torchvision    import transforms
 
+# Model
+def resnet_transforms(mean, std):
+    '''
+        Define default transforms for Resnet neural network.
+    '''
+    dataTransforms = {
+            'train': transforms.Compose([
+                        transforms.ToPILImage(),
+                        transforms.RandomResizedCrop(224),
+                        transforms.RandomHorizontalFlip(),
+                        transforms.ToTensor(),
+                        transforms.Normalize(mean, std),
+        ]),
+            'val': transforms.Compose([
+                        transforms.ToPILImage(),
+                        transforms.Resize(256),
+                        transforms.CenterCrop(224),
+                        transforms.ToTensor(),
+                        transforms.Normalize(mean, std),
+        ])}
+    return dataTransforms
+
+
+# File system
 def file_exists(x):
     return Path(x).is_file()
 

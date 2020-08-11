@@ -35,17 +35,22 @@ class MetadataModel(torch.nn.Module):
         output = self.fc3(feature)
         return output
 
-def train_model(model, dataset, batch_size, optimizer, scheduler, epoch_number,
+def train_model(model, dataset, batch_size, optimizer, scheduler, num_epochs,
         use_metadata, loss_balance=True, identifier=None):
     # Create unique identifier for this experiment.
     if identifier is None:
-        identifier = uuid.uuid4()
+        identifier = str(uuid.uuid4())
     else:
-        identifier = str(identifier)
+        identifier = str(identifier) + "_" + str(uuid.uuid4())
+    phase_list = ("train", "val")
 
-    phases = ("train", "val")
+    # Setup experiment paths
+    experiment_dir = Path(dirs.experiments) / str(identifier)
+    weights_folder  = experiment_dir / "weights" 
+    dirs.create_folder(weights_folder)
 
     print("Using device: ", device)
+    
     # Instantiate loss and softmax.
     if loss_balance:
         weight = [1.0, dataset["train"].imbalance_ratio()]
@@ -58,18 +63,21 @@ def train_model(model, dataset, batch_size, optimizer, scheduler, epoch_number,
     # Define data loaders.
     data_loader = {x: torch.utils.data.DataLoader(dataset[x],
         batch_size=batch_size, shuffle=True, num_workers=4)
-        for x in phases}
+        for x in phase_list}
 
-    # Statistics that will be computed later.
-    epoch_auc      = {x: np.zeros(epoch_number) for x in phases}
-    epoch_loss     = {x: np.zeros(epoch_number) for x in phases}
-    epoch_accuracy = {x: np.zeros(epoch_number) for x in phases}
-    results_phase     = {x: dict()                 for x in phases}
-    for i in range(epoch_number):
-        print("\nEpoch: {}/{}".format(i + 1, epoch_number))
-        for phase in phases:
+    # Measures that will be computed later.
+    tracked_metrics = ["epoch", "phase", "loss", "accuracy", "auc", "seconds"]
+    epoch_auc       = {x: np.zeros(num_epochs) for x in phase_list}
+    epoch_loss      = {x: np.zeros(num_epochs) for x in phase_list}
+    epoch_accuracy  = {x: np.zeros(num_epochs) for x in phase_list}
+    results_df      = pd.DataFrame()
+
+    for i in range(num_epochs): # Epochs start at 1
+        print("\nEpoch: {}/{}".format(i+1, num_epochs))
+        results_dict = {metric: [] for metric in tracked_metrics}
+        for phase in phase_list:
             print("\n{} phase: ".format(str(phase).capitalize()))
-            
+
             # Set model to training or evalution mode according to the phase.
             if phase == "train":
                 model.train()
@@ -115,43 +123,37 @@ def train_model(model, dataset, batch_size, optimizer, scheduler, epoch_number,
                 scheduler.step()
 
             # Compute epoch loss, accuracy and AUC(ROC).
+            sample_number = len(dataset[phase])
             epoch_target = np.concatenate(epoch_target, axis=0)
-            epoch_confidence = np.concatenate(epoch_confidence, axis=0)
-            epoch_loss[phase][i] /= len(dataset[phase]) #sample_number
+            epoch_confidence = np.concatenate(epoch_confidence, axis=0) # List of batch confidences
+            epoch_loss[phase][i] /= sample_number
             epoch_correct = epoch_target == (epoch_confidence > 0.5)
-            epoch_accuracy[phase][i] = (epoch_correct.sum() /
-                    len(dataset[phase])) #sample_number
+            epoch_accuracy[phase][i] = (epoch_correct.sum() / sample_number)
             epoch_auc[phase][i] = sklearn.metrics.roc_auc_score(epoch_target,
-                    epoch_confidence)
+                                                                epoch_confidence)
             epoch_seconds = time.time() - epoch_seconds
 
-            time_string = "{:.0f}h {:.0f}m {:.0f}s".format(epoch_seconds // 3600, \
-                epoch_seconds // 60 % 60, epoch_seconds % 60)
+            time_string   = time.strftime("%H:%M:%S", time.gmtime(epoch_seconds))
             print("Epoch complete in ", time_string)
             print("{} loss: {:.4f}".format(phase, epoch_loss[phase][i]))
             print("{} accuracy: {:.4f}".format(phase, epoch_accuracy[phase][i]))
             print("{} area under ROC curve: {:.4f}".format(phase, epoch_auc[phase][i]))
 
-            results_phase[phase] = {"epoch":      i,
-                                    "phase":      phase,
-                                    "target":     epoch_target[i],
-                                    "confidence": epoch_confidence[i],
-                                    "loss":       epoch_loss[phase][i],
-                                    "correct":    epoch_correct,
-                                    "accuracy":   epoch_accuracy[phase][i],
-                                    "auc":        epoch_auc[phase][i],
-                                    "seconds":    epoch_seconds
-            }
-        results_df = pd.concat([results_phase[phases[0]],
-                                results_phase[phases[1]]], axis=1)
+            # Collect metrics in a dictionary
+            results_dict["epoch"].append(i+1) # Epochs start at 1
+            results_dict["phase"].append(phase)
+            results_dict["loss"].append(epoch_loss[phase][i])
+            results_dict["accuracy"].append(epoch_accuracy[phase][i])
+            results_dict["auc"].append(epoch_auc[phase][i])
+            results_dict["seconds"].append(epoch_seconds)
+
+        # Save metrics to DataFrame
+        results_df = results_df.append(pd.DataFrame(results_dict), sort=False, ignore_index=True)
 
         # Save model
-        experiment_path = Path(dirs.experiments) / str(identifier)
-        weights_path = (experiment_path / "weights") / "resnet18_{}_{}.pth".format(i, identifier)
-        dirs.create_folder(weights_path.parent)
-
+        weights_path = weights_folder / "resnet18_epoch_{}_{}.pth".format(i+1, identifier)
         torch.save(model.state_dict, weights_path)
-        results_df.to_json(experiment_path / "epoch_{}_results.json".format(i))
+        results_df.to_json(experiment_dir / "epoch_{}_results.json".format(i+1))
 
 if __name__ == "__main__":
     pass

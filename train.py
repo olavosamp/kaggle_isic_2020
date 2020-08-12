@@ -10,7 +10,7 @@ import lib.utils    as utils
 import lib.defines  as defs
 
 if __name__ == "__main__":
-    data_path = dirs.dataset
+    data_path       = dirs.dataset
     use_metadata    = False
     loss_balance    = False
     batch_size      = 32
@@ -20,7 +20,8 @@ if __name__ == "__main__":
     epoch_number    = 3
     step_size       = 20
     gamma           = 0.1
-    identifier      = "test-exp-saving-02" # You can name the experiment using a string
+    identifier      = None # You can name the experiment using a string
+    data_sample_size= 0.05 # This should be 1 for training with the entire dataset
 
     # Define image transformations
     image_transform = utils.resnet_transforms(defs.IMAGENET_MEAN, defs.IMAGENET_STD)
@@ -28,10 +29,10 @@ if __name__ == "__main__":
     # Create train and validation datasets
     dataset = {}
     dataset["train"] = lib.dataset.create_dataset(data_path, "csv/{}_set.csv".format("train"),
-                transform=image_transform["train"], balance=True, sample=0.05)
+                transform=image_transform["train"], balance=True, sample=data_sample_size)
     
     dataset["val"] = lib.dataset.create_dataset(data_path, "csv/{}_set.csv".format("val"),
-                transform=image_transform["val"], balance=False, sample=0.05)
+                transform=image_transform["val"], balance=False, sample=data_sample_size)
 
     print("Train set size: {}.".format(len(dataset["train"])))
     print("Validation set size: {}.".format(len(dataset["val"])))

@@ -97,6 +97,7 @@ def get_file_list(folder_path, ext_list=['*'], remove_dups=True, recursive=True)
 
 def get_epochs_results(experiment_folder):
     results_files = get_file_list(experiment_folder, ext_list=["json"], recursive=False)
-    results_dfs = [read_results_json(x) for x in results_files]
-
-    return results_dfs
+    # results_dfs = [read_results_json(x) for x in results_files]
+    results_files = sorted(results_files)
+    results_df = read_results_json(results_files[-1])
+    return results_df

@@ -1,6 +1,6 @@
 import os
 
-dataset     = "/home/common/datasets/SIIM-ISIC_2020_Melanoma/jpeg/train/"
+dataset     = "/home/common/datasets/SIIM-ISIC_2020_Melanoma/jpeg/train_compact/"
 weights     = "data/weights/"
 experiments = "data/experiments/"
 images      = "../images"

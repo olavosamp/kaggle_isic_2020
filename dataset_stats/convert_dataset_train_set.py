@@ -2,8 +2,9 @@ import os
 from glob import glob
 from tqdm import tqdm
 from pathlib import Path
-# from ..lib import dirs
+# from ..lib import dirs # Doesn't work on unix, why?
 
+# Train
 source_dir = "/home/common/datasets/SIIM-ISIC_2020_Melanoma/jpeg/train/"
 dest_dir   = "/home/common/datasets/SIIM-ISIC_2020_Melanoma/jpeg/train_compact/"
 

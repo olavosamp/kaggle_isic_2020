@@ -201,7 +201,7 @@ def train_model(model, dataset, batch_size, optimizer, scheduler, num_epochs,
         torch.save(model.state_dict, weights_path)
         results_df.to_json(results_path)
 
-        return results_path
+    return results_path.parent
 
 if __name__ == "__main__":
     pass

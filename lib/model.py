@@ -1,3 +1,4 @@
+import os
 import time
 import uuid
 from pathlib import Path
@@ -69,6 +70,80 @@ def freeze_convolutional_resnet(model, freeze):
     # Do not freeze FC layer
     for param in model.fc.parameters():
         param.requires_grad = True
+
+
+def load_model(model, weight_path, device=device, eval=True):
+    '''
+        Load model weights in corresponding model object.
+
+        model: instantiated model object
+            Model into which load the weights.
+        
+        weight_path: string filepath
+            Filepath of the weights.
+    '''
+    weight_path = str(weight_path)
+    assert os.path.isfile(weight_path), "Invalid weight filepath."
+    checkpoint = torch.load(weight_path)#, map_location=device)
+    # print(checkpoint)
+    # input()
+    
+    # model.load_state_dict(checkpoint['model_state_dict'])
+    model.load_state_dict(checkpoint())
+    return model
+
+
+def predict(model, dataloader, device=device, threshold=None, use_metadata=True):
+    '''
+        Performs inference on the input data using a Pytorch model.
+        model: model object
+            Model which will perform inference on the data. Must support
+            inference through syntax
+                 result = model(input)
+        data: collection of model inputs
+            A collection, such as a list, of model inputs. Each element of data
+            must match the required arguments of model.
+
+        threshold: None or float (optional)
+            Decision threshold to evaluate model outputs.
+            
+            If None, result will be an array of floats representing model confidence
+            for each input.
+             
+            If float, result will be an array of zeros and ones. Each input will be
+            converted to one if model confidence is greater than threshold and zero
+            if lesser.
+
+        Returns:
+        result: array of float
+    '''
+    model.to(device)
+    model.eval()
+    # if metadata:
+    #     def inference_single_input(single_input):
+    #         # image = single_input[0].view(1, -1)
+    #         image = image.to(device)
+    #         metadata = single_input[1].to(device)
+    #         return model(image, metadata)
+    # else:
+    #     def inference_single_input(single_input):
+    #         return model(single_input.to(device))
+
+    softmax = torch.nn.Softmax(dim=1)
+    result_list = []
+    for image, metadata in tqdm(dataloader):
+        image    = image.to(device)
+        metadata = metadata.to(device)
+
+        if use_metadata:
+            output = model(image, metadata)
+        else:
+            output = model(image)
+            
+        confidence = softmax(output).detach().cpu().numpy()[:, 1]
+        result_list.append(confidence)
+
+    return result_list
 
 
 def train_model(model, dataset, batch_size, optimizer, scheduler, num_epochs,
@@ -198,7 +273,7 @@ def train_model(model, dataset, batch_size, optimizer, scheduler, num_epochs,
         # Save model
         weights_path = weights_folder / "resnet18_epoch_{}_{}.pth".format(i+1, identifier)
         results_path = experiment_dir / "epoch_{}_results.json".format(i+1)
-        torch.save(model.state_dict, weights_path)
+        torch.save(model.state_dict(), weights_path)
         results_df.to_json(results_path)
 
     return results_path.parent

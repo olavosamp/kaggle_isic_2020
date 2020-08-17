@@ -32,7 +32,7 @@ class MetadataModel(torch.nn.Module):
         feature_metadata = self.fc2(metadata)
         feature_metadata = self.relu(feature_metadata)
         feature = feature_image + feature_metadata
-        output = self.fc3(feature)
+        output  = self.fc3(feature)
         return output
 
 

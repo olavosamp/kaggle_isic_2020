@@ -46,8 +46,9 @@ class Dataset(torch.utils.data.Dataset):
         if self.transform is not None:
             image = self.transform(image)
         # Convert metadata and target to torch tensors.
-        metadata = torch.from_numpy(self.metadata[idx])
-        target = torch.tensor(self.target[idx])
+        # metadata = torch.from_numpy(self.metadata[idx], dtype=torch.float)
+        metadata = torch.as_tensor(self.metadata[idx], dtype=torch.float)
+        target   = torch.tensor(self.target[idx])
         return image, metadata, target
 
 def create_dataset(data_path, csv_path, mean_age=48.9, std_age=14.4,

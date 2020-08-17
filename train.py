@@ -18,7 +18,7 @@ if __name__ == "__main__":
     learning_rate   = 0.001
     weight_decay    = 0.0001
     momentum        = 0.9
-    epoch_number    = 10
+    epoch_number    = 30
     step_size       = 20
     gamma           = 0.1
     data_sample_size= 1.   # This should be 1 for training with the entire dataset
@@ -49,10 +49,13 @@ if __name__ == "__main__":
         resnet.fc = torch.nn.Linear(512, 2)
         model = resnet
     model.to(lib.model.device)
-    
+
     optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate,
                 momentum=momentum, weight_decay=weight_decay)
-    
+
+    # optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate,
+    #             betas=(0.85, 0.99), weight_decay=weight_decay)
+
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=step_size,
                 gamma=gamma)
 

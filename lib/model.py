@@ -1,18 +1,17 @@
+import time
+import uuid
+from pathlib import Path
 import torch
 import torchvision
 import numpy  as np
 import pandas as pd
-from pathlib import Path
 import sklearn.metrics
-import time
-import uuid
 from tqdm import tqdm
 
 import lib.dataset
 import lib.dirs as dirs
 
-
-device = torch.device("cuda:3" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class MetadataModel(torch.nn.Module):
     def __init__(self, base_model, base_out_dim, metadata_dim=9,
@@ -24,6 +23,7 @@ class MetadataModel(torch.nn.Module):
         self.fc2 = torch.nn.Linear(metadata_dim, hidden_dim)
         self.fc3 = torch.nn.Linear(hidden_dim, 2)
 
+
     def forward(self, image, metadata):
         feature_image = self.base_model(image)
         feature_image = feature_image.view(feature_image.size(0), -1)
@@ -32,11 +32,48 @@ class MetadataModel(torch.nn.Module):
         feature_metadata = self.fc2(metadata)
         feature_metadata = self.relu(feature_metadata)
         feature = feature_image + feature_metadata
-        output = self.fc3(feature)
+        output  = self.fc3(feature)
         return output
 
+
+    def freeze_convolutional(self, freeze):
+        '''
+            Freezes or unfreezes the model convolutional layers.
+            Argument:
+                freeze: bool
+                    Pass True to freeze and False to unfreeze layers.
+        '''
+        assert type(freeze) == bool, "Argument must be a boolean."
+
+        for layer in self.base_model.children():
+            for param in layer.parameters():
+                # Freeze == True sets requires_grad = False: freezes layers
+                param.requires_grad = not(freeze) 
+
+
+def freeze_convolutional_resnet(model, freeze):
+    '''
+        Freezes or unfreezes the model convolutional layers. Assumes the passed model
+        has a method named fc that corresponds to the only layer the user wishes to
+        keep unfrozen.
+        Argument:
+            freeze: bool
+                Pass True to freeze and False to unfreeze layers.
+    '''
+    # Freeze (or not) convolutional layers
+    for child in model.children():
+        for param in child.parameters():
+            # Freeze == True sets requires_grad = False: freezes layers
+            param.requires_grad = not(freeze)
+    
+    # Do not freeze FC layer
+    for param in model.fc.parameters():
+        param.requires_grad = True
+
+
 def train_model(model, dataset, batch_size, optimizer, scheduler, num_epochs,
-        use_metadata, loss_balance=True, identifier=None):
+                use_metadata, loss_balance=True, identifier=None,
+                freeze_conv=False):
     # Create unique identifier for this experiment.
     if identifier is None:
         identifier = str(uuid.uuid4())
@@ -49,8 +86,16 @@ def train_model(model, dataset, batch_size, optimizer, scheduler, num_epochs,
     weights_folder  = experiment_dir / "weights" 
     dirs.create_folder(weights_folder)
 
+    # TODO: Freeze conv layers in a more generic way. Current two function
+    # approach is unelegant.
+    if use_metadata:
+        assert type(model) == MetadataModel, "Model must be a MetadataModel object"
+        model.freeze_convolutional(freeze_conv)
+    else:
+        freeze_convolutional_resnet(model, freeze_conv)
+
     print("Using device: ", device)
-    
+
     # Instantiate loss and softmax.
     if loss_balance:
         weight = [1.0, dataset["train"].imbalance_ratio()]
@@ -72,7 +117,7 @@ def train_model(model, dataset, batch_size, optimizer, scheduler, num_epochs,
     epoch_accuracy  = {x: np.zeros(num_epochs) for x in phase_list}
     results_df      = pd.DataFrame()
 
-    for i in range(num_epochs): # Epochs start at 1
+    for i in range(num_epochs):
         print("\nEpoch: {}/{}".format(i+1, num_epochs))
         results_dict = {metric: [] for metric in tracked_metrics}
         for phase in phase_list:
@@ -152,8 +197,11 @@ def train_model(model, dataset, batch_size, optimizer, scheduler, num_epochs,
 
         # Save model
         weights_path = weights_folder / "resnet18_epoch_{}_{}.pth".format(i+1, identifier)
+        results_path = experiment_dir / "epoch_{}_results.json".format(i+1)
         torch.save(model.state_dict, weights_path)
-        results_df.to_json(experiment_dir / "epoch_{}_results.json".format(i+1))
+        results_df.to_json(results_path)
+
+    return results_path.parent
 
 if __name__ == "__main__":
     pass

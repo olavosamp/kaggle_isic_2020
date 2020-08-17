@@ -5,23 +5,26 @@ import numpy as np
 from lib.model      import MetadataModel, train_model
 import lib.model
 import lib.dataset
-import lib.dirs     as dirs
-import lib.utils    as utils
-import lib.defines  as defs
+import lib.dirs      as dirs
+import lib.utils     as utils
+import lib.vis_utils as vutils
+import lib.defines   as defs
 
 if __name__ == "__main__":
     data_path       = dirs.dataset
-    use_metadata    = False
-    loss_balance    = False
-    batch_size      = 32
+    use_metadata    = True
+    loss_balance    = True
+    batch_size      = 128
     learning_rate   = 0.001
     weight_decay    = 0.0001
     momentum        = 0.9
-    epoch_number    = 3
+    epoch_number    = 30
     step_size       = 20
     gamma           = 0.1
-    identifier      = None # You can name the experiment using a string
-    data_sample_size= 0.05 # This should be 1 for training with the entire dataset
+    data_sample_size= 1.   # This should be 1 for training with the entire dataset
+    freeze_conv     = True
+    identifier      = "sample_{:.0f}%_metadata_{}_balance_{}_freeze_{}".format(
+                            data_sample_size*100, use_metadata, loss_balance, freeze_conv)
 
     # Define image transformations
     image_transform = utils.resnet_transforms(defs.IMAGENET_MEAN, defs.IMAGENET_STD)
@@ -46,12 +49,18 @@ if __name__ == "__main__":
         resnet.fc = torch.nn.Linear(512, 2)
         model = resnet
     model.to(lib.model.device)
-    
-    optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate,
-            momentum=momentum, weight_decay=weight_decay)
-    
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=step_size,
-            gamma=gamma)
 
-    train_model(model, dataset, batch_size, optimizer, scheduler, epoch_number,
-            use_metadata, loss_balance, identifier)
+    optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate,
+                momentum=momentum, weight_decay=weight_decay)
+
+    # optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate,
+    #             betas=(0.85, 0.99), weight_decay=weight_decay)
+
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=step_size,
+                gamma=gamma)
+
+    results_folder = train_model(model, dataset, batch_size, optimizer, scheduler, epoch_number,
+                        use_metadata, loss_balance=loss_balance, identifier=identifier,
+                        freeze_conv=freeze_conv)
+
+    vutils.plot_val_from_results(results_folder, dest_dir=None)

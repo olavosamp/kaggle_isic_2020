@@ -11,6 +11,7 @@ from pathlib                    import Path
 
 import lib.dirs                as dirs
 import lib.defines             as defs
+import lib.utils               as utils
 
 
 def set_mpl_fig_options(figsize=defs.MPL_FIG_SIZE_SMALL):
@@ -30,7 +31,7 @@ def plot_model_history(data, data_labels="", xlabel="", ylabel="", title="Model 
                     "Argument 'data'  must be a list of values or a list of datasets."
     fig = set_mpl_fig_options(figsize=defs.MPL_FIG_SIZE)
 
-    x = range(len(data))
+    x = range(1, len(data)+1)
     plt.plot(x, data, '.-', label=data_labels)
 
     if data_labels != "":
@@ -53,3 +54,22 @@ def plot_model_history(data, data_labels="", xlabel="", ylabel="", title="Model 
     if show and mpl.get_backend() != "agg":
         plt.show()
     return fig
+
+
+def plot_val_from_results(results_folder, dest_dir=None):
+    results_folder = Path(results_folder)
+    
+    if dest_dir == None:
+        dest_dir = Path(dirs.images) / results_folder.name
+    else:
+        dest_dir = Path(dest_dir)
+
+    results_df = utils.get_epochs_results(results_folder)
+    print(results_df)
+    mask = results_df.loc[:, 'phase'] == 'val'
+    plot_data = results_df[mask]
+
+    for ext in ['jpg', 'pdf']:
+        plot_model_history(plot_data['auc'], xlabel="Epochs", ylabel="AUC",
+                                    title="Validation Set History",
+                                    save_path=dest_dir/("model_val_auc."+ext), show=False)

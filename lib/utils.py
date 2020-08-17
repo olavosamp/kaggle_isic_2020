@@ -90,14 +90,26 @@ def get_file_list(folder_path, ext_list=['*'], remove_dups=True, recursive=True)
         # Remove duplicated entries
         file_list = list(dict.fromkeys(file_list))
     
-    # file_list = list(map(replace_symbols, file_list))
-    # file_list = make_path(file_list)
     return file_list
 
 
 def get_epochs_results(experiment_folder):
+    '''
+        Read epoch results from a list of JSON files in experiment_folder.
+        The files are named with a numeric identifier and only the highest identifier
+        should be read and returned as a DataFrame.
+    '''
     results_files = get_file_list(experiment_folder, ext_list=["json"], recursive=False)
-    # results_dfs = [read_results_json(x) for x in results_files]
-    results_files = sorted(results_files)
+
+    # TODO:
+    # This assumes JSON files follow the form:
+    #   epoch_xx_results.json
+    # It would be best to make this function not dependent on this.
+    def get_numeric_key(string_path):
+        key = str(Path(string_path).parts[-1])
+        key = key.split("_")[1]
+        return int(key)
+    
+    results_files.sort(key=get_numeric_key)
     results_df = read_results_json(results_files[-1])
     return results_df

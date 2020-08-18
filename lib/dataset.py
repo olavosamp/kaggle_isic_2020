@@ -59,7 +59,7 @@ class Dataset(torch.utils.data.Dataset):
 
 class TestSet(Dataset):
     def __init__(self, image_path, metadata, dummy_target, transform, balance,
-                device=lib.model.device):
+                device=None):
         super().__init__(image_path, metadata, dummy_target, transform, False)
         self.device = device
 

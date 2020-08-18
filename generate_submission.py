@@ -14,7 +14,7 @@ from lib.model      import MetadataModel, load_model, predict
 data_path    = dirs.test_set
 csv_path     = Path(dirs.csv) / "test.csv"
 weight_path  = Path(dirs.experiments) / \
-    "sample_100%_metadata_True_balance_True_freeze_False_e5390245-6df2-4fb9-9e67-007bc3f690dd/weights/resnet18_epoch_30_sample_100%_metadata_True_balance_True_freeze_False_e5390245-6df2-4fb9-9e67-007bc3f690dd.pth"
+    "sample_100%_metadata_True_balance_False_freeze_False_ff85cd3f-16cf-4cc2-96cf-a923cd595504/weights/resnet18_epoch_1_sample_100%_metadata_True_balance_False_freeze_False_ff85cd3f-16cf-4cc2-96cf-a923cd595504.pth"
 use_metadata = True
 data_sample_size = 1.
 batch_size = 32
@@ -47,10 +47,10 @@ results = predict(model, data_loader, use_metadata=use_metadata)
 results = np.concatenate(results, axis=0)
 
 test_csv = pd.read_csv(csv_path)
-test_csv = test_csv.loc[int(len(test_csv)*data_sample_size) ,:]
+# test_csv = test_csv.loc[int(len(test_csv)*data_sample_size) ,:]
 
 submission_csv = pd.DataFrame({'image_name': test_csv['image_name'],
                                'target': results})
 
 print(submission_csv.head())
-submission_csv.to_csv(dirs.csv / "submission.csv", index=False)
+submission_csv.to_csv(Path(dirs.csv) / "submission.csv", index=False)

@@ -89,7 +89,7 @@ def load_model(model, weight_path, device=device, eval=True):
     # input()
     
     # model.load_state_dict(checkpoint['model_state_dict'])
-    model.load_state_dict(checkpoint())
+    model.load_state_dict(checkpoint)
     return model
 
 
@@ -139,7 +139,7 @@ def predict(model, dataloader, device=device, threshold=None, use_metadata=True)
             output = model(image, metadata)
         else:
             output = model(image)
-            
+
         confidence = softmax(output).detach().cpu().numpy()[:, 1]
         result_list.append(confidence)
 
